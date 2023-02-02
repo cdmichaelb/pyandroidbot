@@ -57,25 +57,27 @@ if __name__ == '__main__':
     start_time = time.time()
 
     def take_screenshot(device_id, count, adb_path):
-        if os.path.exists("screenshot{}.png".format(count)):
+        if os.path.exists(f"screenshot{count}.png"):
             count += 1
         else:
             os.system(
-                "{} -s {} shell screencap -p /sdcard/screenshot{}.png".format(adb_path, device_id, count))
+                f"{adb_path} -s {device_id} shell screencap -p /sdcard/screenshot{count}.png")
             os.system(
-                "{} -s {} pull /sdcard/screenshot{}.png".format(adb_path, device_id, count))
+                f"{adb_path} -s {device_id} pull /sdcard/screenshot{count}.png")
         return count
 
     def display_screenshot(count, old_count=0):
-        if os.path.exists("screenshot{}.png".format(count)):
-            img = cv2.imread("screenshot{}.png".format(count))
-            img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        if os.path.exists(f"screenshot{count}.png"):
+            img = cv2.imread(f"screenshot{count}.png")
             if count != old_count:
-                cv2.imshow("Screenshot", img)
-                cv2.waitKey(1)
+                try:
+                    cv2.imshow("Screenshot", img)
+                    cv2.waitKey(1)
+                except:
+                    pass
             old_count = count
             try:
-                os.remove("screenshot{}.png".format(count-1))
+                os.remove(f"screenshot{count-1}.png")
             except:
                 pass
         return old_count
@@ -93,7 +95,7 @@ if __name__ == '__main__':
 
         if len(time_deltas) % 10 == 0:
             avg_time_delta = np.mean(time_deltas) * 1000
-            print("Average delay between screenshots: {:.2f} ms".format(
-                avg_time_delta))
+            print(
+                f"Average delay between screenshots: {avg_time_delta:.2f} ms")
             # convert to fps
-            print("Average FPS: {:.2f}".format(1000 / avg_time_delta))
+            print(f"Average FPS: {1000/avg_time_delta:.2f}")
