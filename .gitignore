@@ -1,0 +1,41 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# Python venv folder
+venv/
+
+# Screenshots
+*.png
+
+# Your custom suggestions:
+# Any build artifacts or generated files
+bin/
+obj/
+*.so
+*.dll
+*.dylib
+
+# Any logs or database files
+*.log
+*.sqlite
+*.sqlite3
+
+# Other OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Idea project files
+*.iml
+*.ipr
+*.iws
+.idea/

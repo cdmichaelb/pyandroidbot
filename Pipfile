@@ -5,6 +5,8 @@ name = "pypi"
 
 [packages]
 adb-shell = "*"
+opencv-python = "*"
+matplotlib = "*"
 
 [dev-packages]
 

@@ -2,7 +2,7 @@ import adb_shell
 
 
 class AndroidDebugBridge:
-    def __init__(self, host='localhost', port=5037):
+    def __init__(self, host, port):
         # Initialize ADB client with host and port
         self.adb_client = adb_shell.AdbClient(host, port)
 
