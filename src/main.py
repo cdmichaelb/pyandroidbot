@@ -76,38 +76,14 @@ def take_screenshot(device_id, count, adb_path):
             f"{adb_path} -s {device_id} pull /sdcard/screenshot{count}.png")
     return count
 
-# Define function to display screenshot
-
-
-def display_screenshot(count, old_count=0):
-    # Check if screenshot file exists
-    if os.path.exists(f"screenshot{count}.png"):
-        # Read the screenshot file
-        img = cv2.imread(f"screenshot{count}.png")
-        # convert the image to black and white
-        try:
-            img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)  # Convert to grayscale
-            img = cv2.threshold(
-                img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
-        except:
-            pass
-        # Display the screenshot if it is a new screenshot
-        if count != old_count:
-            try:
-                cv2.imshow("Screenshot", img)
-                cv2.waitKey(1)
-            except:
-                pass
-        old_count = count
-    return old_count
-
-# Define function to process screenshot
-
 
 def process_screenshot(count):
     global old_count
     # Read the screenshot file
-    img = cv2.imread(f"screenshot{count}.png")
+    try:
+        img = cv2.imread(f"screenshot{count}.png")
+    except:
+        return None
     # convert the image to black and white
     try:
         img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)  # Convert to grayscale
@@ -136,7 +112,7 @@ def locate_image(img, template):
     for pt in zip(*loc[::-1]):
         cv2.rectangle(img, pt, (pt[0] + width, pt[1] + height), (0, 0, 255), 2)
     # Display the image
-    cv2.imshow("Screenshot", img)
+    # cv2.imshow("Screenshot", img)
     if cv2.waitKey(1) == ord('q'):
         t2.join()
         t1.join()
@@ -170,15 +146,28 @@ def remove_screenshot(count):
 device_id = "emulator-5554"
 adb_path = "\"C:\Program Files\BlueStacks_nxt\HD-Adb.exe\""
 count = 1
-template = cv2.imread("template.png", 0)
-collect = cv2.imread("collect.png", 0)
-taskgift = cv2.imread("taskgift.png", 0)
-helpimg = cv2.imread("help.png", 0)
-ladyloot = cv2.imread("ladyloot.png", 0)
-ladylootbox = cv2.imread("ladylootbox.png", 0)
-back = cv2.imread("back.png", 0)
 
+# Get all files from the image folder
+image_folder = "images/"
+image_files = os.listdir(image_folder)
 
+# Create a dictionary to store tasks
+tasks = {}
+
+# Loop through each file in the image folder
+i = 5
+for file in image_files:
+    # Read the image file
+    try:
+        img = cv2.imread(os.path.join(image_folder, file), 0)
+    except:
+        continue
+    # Get the file name without the extension
+    task_name = os.path.splitext(file)[0]
+    # Add the task to the tasks dictionary
+    tasks[task_name] = {"template": img, "time": 0, "interval": i}
+    print(f"Added {task_name} to tasks, interval: {i}")
+    i += 1
 # Main loop to continuously take and display screenshots
 
 
@@ -190,44 +179,20 @@ def main_loop():
 
     while True:
         # Take the screenshot
+        try:
+            count = take_screenshot(device_id, count, adb_path)
 
-        count = take_screenshot(device_id, count, adb_path)
-        # old_count = display_screenshot(count, old_count)  # Display the screenshot
-        # Only process the screenshot if it is a new screenshot
+            if count != old_count or img is None:
+                img = process_screenshot(count)
 
-        # Process the screenshot
-        # Only process the screenshot if it is a new screenshot
-        # print(count, old_count)
-        # print(count != old_count)
-        if count != old_count or img is None:
-            img = process_screenshot(count)
+            process_tasks(img)
+            old_count = count  # Set the old_count to the current count
 
-        # img = process_screenshot(count)  # Process the screenshot
-        # Locate the image in the screenshot
-        # =============Replace with task manager====================
-        # click_location = locate_image(img, helpimg)
-        # if not click_location:
-        #     click_location = locate_image(img, collect)
-        # if not click_location:
-        #     click_location = locate_image(img, taskgift)
-        # if not click_location:
-        #     click_location = locate_image(img, template)
-        process_tasks(img)
-        old_count = count  # Set the old_count to the current count
-
-        remove_screenshot(count)  # Remove the previous screenshot
-
-
-# Process list of tasks
-tasks = [
-    ["help", 5, 0],
-    ["collect", 6, 0],
-    ["taskgift", 7, 0],
-    ["ladyloot", 8, 0],
-    ["ladylootbox", 9, 0],
-    ["template", 10, 0],
-    ["back", 11, 0],
-]
+            remove_screenshot(count)  # Remove the previous screenshot
+        except KeyboardInterrupt:
+            # t2.join()
+            # t1.join()
+            exit()
 
 
 def process_tasks(img):
@@ -240,61 +205,35 @@ def process_tasks(img):
             return
     time_deltas.append(time.time())
     for task in tasks:
-        if (task[2] == 0) or (time.time() - task[2] >= task[1]):
-            # Run task
+        if (tasks[task]["time"] == 0) or (time.time() - tasks[task]["time"] >= tasks[task]["interval"]):
+
             print(
-                f"Running task {task[0]} because {(time.time() - task[2])} >= {task[1]}")
-            # =============Replace with task manager====================
-            if task[0] == "help":
-                click_location = locate_image(img, helpimg)
-                task[2] = time.time()
-                break
-            if task[0] == "collect":
-                click_location = locate_image(img, collect)
-                task[2] = time.time()
-                break
-            if task[0] == "taskgift":
-                click_location = locate_image(img, taskgift)
-                task[2] = time.time()
-                break
-            if task[0] == "ladyloot":
-                click_location = locate_image(img, ladyloot)
-                task[2] = time.time()
-                break
-            if task[0] == "ladylootbox":
-                click_location = locate_image(img, ladylootbox)
-                task[2] = time.time()
-                break
-            if task[0] == "template":
-                click_location = locate_image(img, template)
-                task[2] = time.time()
-                break
-            if task[0] == "back":
-                click_location = locate_image(img, back)
-                task[2] = time.time()
-                break
-            time.sleep(1)
+                f"Running task {task} because {(time.time() - tasks[task]['time'])} >= {tasks[task]['interval']}")
+
+            click_location = locate_image(img, tasks[task]["template"])
+            tasks[task]["time"] = time.time()
+            # time.sleep(1)
+            break
 
 
 def click_loop():
 
     global click_location
     while True:
-        # print("click loop", click_location)
-        if click_location:
-            # Prevent clicking too often
-            # if len(time_deltas) > 0:
-            #     if time.time() - time_deltas[-1] < 1:
-            #         continue
-            # time_deltas.append(time.time())
+        try:
+            if click_location:
 
-            os.system(
-                f"{adb_path} -s {device_id} shell input tap {click_location[0]} {click_location[1]}")
-            click_location = None
-        time.sleep(1)
+                os.system(
+                    f"{adb_path} -s {device_id} shell input tap {click_location[0]} {click_location[1]}")
+                click_location = None
+            time.sleep(1)
+
+        except KeyboardInterrupt:
+            t2.join()
+            t1.join()
+            exit()
 
 
-# thread click_loop and main_loop
 t1 = threading.Thread(target=main_loop)
 t2 = threading.Thread(target=click_loop)
 t1.start()
