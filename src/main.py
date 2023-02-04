@@ -60,7 +60,7 @@ old_count = 0  # Store the previous screenshot count
 time_deltas = []  # Store the time difference between each screenshot
 time_deltas2 = []  # Store the time difference between each screenshot
 start_time = time.time()  # Store the start time
-click_location = None  # Store the location to click
+click_location = []  # Store the location to click
 # Define function to take screenshot
 
 
@@ -94,7 +94,11 @@ def process_screenshot(count):
     # old_count = count
     return img
 
-# Locate image in screenshot
+
+def add_click_location(x, y):
+    global click_location
+    click_location.append((x, y))
+    print(click_location)
 
 
 def locate_image(img, template):
@@ -113,21 +117,19 @@ def locate_image(img, template):
         cv2.rectangle(img, pt, (pt[0] + width, pt[1] + height), (0, 0, 255), 2)
     # Display the image
     # cv2.imshow("Screenshot", img)
-    if cv2.waitKey(1) == ord('q'):
-        t2.join()
-        t1.join()
-        exit()
+    # cv2.waitKey(0)
     # Click a random location in the rectangle
     try:
         # randomize the click location within the rectangle
         point_x = np.random.randint(pt[0], pt[0] + width)
         point_y = np.random.randint(pt[1], pt[1] + height)
         print(f"Clicking at {point_x}, {point_y}")
-        click_location = (point_x, point_y)
+        add_click_location(point_x, point_y)
+        # click_location = (point_x, point_y)
 
     except:
-        return click_location
-    return click_location
+        return False
+    return True
 
 
 # Define function to remove old screenshot
@@ -182,7 +184,7 @@ def main_loop():
         try:
             count = take_screenshot(device_id, count, adb_path)
 
-            if count != old_count or img is None:
+            if count != old_count or img is None:  # Check if the screenshot is new
                 img = process_screenshot(count)
 
             process_tasks(img)
@@ -203,17 +205,22 @@ def process_tasks(img):
     if len(time_deltas2) > 0:
         if time.time() - time_deltas2[-1] < 1:
             return
-    time_deltas.append(time.time())
+    # time_deltas.append(time.time())
     for task in tasks:
         if (tasks[task]["time"] == 0) or (time.time() - tasks[task]["time"] >= tasks[task]["interval"]):
 
             print(
                 f"Running task {task} because {(time.time() - tasks[task]['time'])} >= {tasks[task]['interval']}")
 
-            click_location = locate_image(img, tasks[task]["template"])
-            tasks[task]["time"] = time.time()
-            # time.sleep(1)
-            break
+            found = locate_image(img, tasks[task]["template"])
+
+            if found:
+                print(f"Found {task}")
+                time_deltas2.append(time.time())
+
+                tasks[task]["time"] = time.time()
+                time.sleep(0.25)
+                break
 
 
 def click_loop():
@@ -224,9 +231,15 @@ def click_loop():
             if click_location:
 
                 os.system(
-                    f"{adb_path} -s {device_id} shell input tap {click_location[0]} {click_location[1]}")
-                click_location = None
-            time.sleep(1)
+                    f"{adb_path} -s {device_id} shell input tap {click_location[0][0]} {click_location[0][1]}")
+                # Remove duplicate click locations
+                while click_location[0] in click_location[1:]:
+                    click_location.pop(1)
+
+                # Remove this click location from the list
+                click_location.pop(0)
+
+            time.sleep(0.25)
 
         except KeyboardInterrupt:
             t2.join()
