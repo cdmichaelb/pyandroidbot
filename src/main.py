@@ -115,9 +115,11 @@ def locate_image(img, template):
     # Draw a rectangle around the template
     for pt in zip(*loc[::-1]):
         cv2.rectangle(img, pt, (pt[0] + width, pt[1] + height), (0, 0, 255), 2)
+
     # Display the image
-    # cv2.imshow("Screenshot", img)
+    cv2.imshow("Screenshot", img)
     # cv2.waitKey(0)
+    # time.sleep(1)
     # Click a random location in the rectangle
     try:
         # randomize the click location within the rectangle
@@ -197,8 +199,12 @@ def main_loop():
             exit()
 
 
+foundOffline = False
+
+
 def process_tasks(img):
     global click_location
+    global foundOffline
 
     if len(tasks) == 0:
         return
@@ -206,6 +212,16 @@ def process_tasks(img):
         if time.time() - time_deltas2[-1] < 1:
             return
     # time_deltas.append(time.time())
+    if foundOffline:
+        found = locate_image(img, tasks["confirm"]["template"])
+        if found:
+            print("Found Confirm")
+            time_deltas2.append(time.time())
+            tasks["confirm"]["time"] = time.time()
+            foundOffline = False
+            time.sleep(0.25)
+            return
+
     for task in tasks:
         if (tasks[task]["time"] == 0) or (time.time() - tasks[task]["time"] >= tasks[task]["interval"]):
 
@@ -213,7 +229,14 @@ def process_tasks(img):
                 f"Running task {task} because {(time.time() - tasks[task]['time'])} >= {tasks[task]['interval']}")
 
             found = locate_image(img, tasks[task]["template"])
+            if found and tasks[task]["template"] == "offline":
+                print("Offline")
+                time_deltas2.append(time.time())
 
+                tasks[task]["time"] = time.time()
+                time.sleep(0.25)
+                # time.sleep(1)
+                return
             if found:
                 print(f"Found {task}")
                 time_deltas2.append(time.time())
